@@ -1,23 +1,50 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import axios from 'axios'
 
-// const apiKey = 'ea92314d'
+// Components
+import Movies from './Movies'
+import Loading from './Loading'
+
+const apiKey = 'ea92314d'
 
 function App () {
-  /*   Reglas de los hooks
-        1. Se deben ejecutar en la cabecera (lógica) de un componente
-        2. Hooks no se pueden cargar como Js
-        3. No se pueden cargar en condicionales, ni ciclos
-   */
   const searchRef = useRef(null)
+  const [movies, setMovies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const handleSubmit = (e) => {
+  const getMovies = (query = 'batman') => {
+    return axios.get(`
+      http://www.omdbapi.com/?apikey=${apiKey}&s=${query}
+    `).then(response => response)
+  }
+
+  const getData = async () => {
+    // const { data: { Search } } = await getMovies()
+    // setMovies(Serach)
+    const { data } = await getMovies()
+    setMovies(data.Search)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    getData()
+  }, [])
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log(searchRef.current.value)
+    const { data } = await getMovies(searchRef.current.value)
+    if (data.Response === 'False') {
+      setError(data.Error)
+      setMovies([])
+    } else {
+      setMovies(data.Search)
+    }
   }
 
   return (
     <section className='container'>
-      <h4 className='text-center'>Buscador de peliculas</h4>
+      <h4 className='py-4 text-center'>Buscador de peliculas</h4>
       <form onSubmit={handleSubmit}>
         <div className='input-group'>
           <input
@@ -25,10 +52,14 @@ function App () {
             type='search'
             placeholder='Nombre de la pelicula...'
             className='form-control'
+            name='buscador'
           />
           <button className='btn btn-primary'>Buscar</button>
         </div>
       </form>
+      <section className='py-4'>
+        {loading ? <Loading /> : <Movies data={movies} />}
+      </section>
     </section>
   )
 }
